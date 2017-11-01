@@ -113,3 +113,5 @@ if __name__ == "__main__":
 	else:
 		print "Incorrect Argument"
 
+# Si on met un \n directement au debut Parsing Error
+
