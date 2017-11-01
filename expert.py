@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from pyparsing import Group, Literal, Optional, Regex, Word, ZeroOrMore, Upcase, alphas
+from pyparsing import Group, Literal, Optional, Regex, Word, ZeroOrMore, Upcase, alphas, Forward
 from collections import Counter
 from pyparsing import ParseException
 import argparse
@@ -12,11 +12,14 @@ def grammar():
 	_not = Literal('!').setParseAction(lambda:'!')
 	_or =  Literal('|').setParseAction(lambda:'|')
 	_xor =  Literal('^').setParseAction(lambda:'^')
+	lpar = Literal("(").suppress()
+	rpar = Literal(")").suppress()
+	polynomial = Forward()
 	sign = _and | _or | _xor
 	letter = Upcase(Word(alphas, max=1))
 	atom = letter
-	monomial = Optional(_not) + atom + Optional(sign)
-	polynomial = Group(monomial + ZeroOrMore(monomial))
+	monomial = Optional(_not) + atom + Optional(sign) | (lpar + polynomial + rpar)
+	polynomial << Group(monomial + ZeroOrMore(monomial))
 	return polynomial('left') + '=>' + polynomial('right')
 
 _grammar = grammar()
@@ -35,26 +38,28 @@ class Rules(object):
 			s_with_blank = ''.join(s.split())
 			if (s_with_blank.find('<=>') > 0):
 				str_temp = s_with_blank.replace("<=>", "=>")
-				stack = [[], "=>", []]
+				stack = []
 				equation = _grammar.parseString(str_temp)
-				stack[0].extend(equation.left)
-				stack[2].extend(equation.right)
+				stack.extend(equation.left[0].asList())
+				stack.extend(["=>"])
+				stack.extend(equation.right[0].asList())
 				self.data.update({self.count:stack})
 				self.count += 1;
-				stack = [[], "=>", []]
-				stack[0].extend(equation.right)
-				stack[2].extend(equation.left)
+				stack = []
+				stack.extend(equation.right[0].asList())
+				stack.extend(["=>"])
+				stack.extend(equation.left[0].asList())
 				self.data.update({self.count:stack})
 				self.count += 1;
 			else:
 				equation = _grammar.parseString(s_with_blank)
-				stack = [[], "=>", []]
-				stack[0].extend(equation.right)
-				stack[2].extend(equation.left)
+				stack = []
+				stack.extend(equation.left[0].asList())
+				stack.extend(["=>"])
+				stack.extend(equation.right[0].asList())
 				self.data.update({self.count:stack})
 				self.count += 1;
 		except ParseException:
-			print len(s)
 			print "Parsing Error"
 			sys.exit()
 
