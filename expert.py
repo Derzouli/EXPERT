@@ -7,6 +7,14 @@ import argparse
 import sys
 import re
 
+def flatten(lst):
+	for x in lst:
+		if isinstance(x, list):
+			for x in flatten(x):
+				yield x
+		else:
+			yield x
+
 def grammar():
 	_and = Literal('+').setParseAction(lambda:'+')
 	_not = Literal('!').setParseAction(lambda:'!')
@@ -24,54 +32,86 @@ def grammar():
 
 _grammar = grammar()
 
+class Term(object):
+
+	def __init__(self, name, value=False):
+		self.name = name
+		self.value = value
+
+	def __str__(self):
+		return self.name
+
+	def __add__(self, other):
+		return Term(self.name + "+" + other.name, self.value & other.value)
+
+	def __xor__(self, other):
+		return Term(self.name + "^" + other.name, self.value ^ other.value)
+
+	# Des quon trouve une inversion on inverse
+	def __invert__(self):
+		return Term("!" + self.name, not self.value)
+
+	# Relation de transitivite OK
+	def __eq__(self, other):
+		return self.value == other.value and set(self.name.split("+")) == set(other.name.split("+")) \
+		and len(self.name) == len(other.name)
+
+
+
 class Rules(object):
 
 	def __init__(self):
-		self.data = {}
 		self.count = 0
+		self.data = {}
 		self.character = [chr(ord('A')+x) for x in range(26)]
-		self.temp = dict((el, 0) for el in self.character)
-		self.goal = {}
+		self.initial_fact = ""
+		self.goals = ""
+		self.fact = ""
+
+	def update(self, stack):
+		self.data.update({self.count:stack})
+		self.count += 1
 
 	def parse(self, s):
 		try:
 			s_with_blank = ''.join(s.split())
 			if (s_with_blank.find('<=>') > 0):
 				str_temp = s_with_blank.replace("<=>", "=>")
-				stack = []
 				equation = _grammar.parseString(str_temp)
-				stack.extend(equation.left[0].asList())
-				stack.extend(["=>"])
-				stack.extend(equation.right[0].asList())
-				self.data.update({self.count:stack})
-				self.count += 1;
-				stack = []
-				stack.extend(equation.right[0].asList())
-				stack.extend(["=>"])
-				stack.extend(equation.left[0].asList())
-				self.data.update({self.count:stack})
-				self.count += 1;
+				match = filter(lambda x : x.isupper() and x.isalpha(), str(equation))
+				self.fact += str(match)
+				stack = {"left":equation.left[0].asList(),"right":equation.right[0].asList()}
+				self.update(stack)
+				stack = {"left":equation.right[0].asList(),"right":equation.left[0].asList()}
+				self.update(stack)
 			else:
 				equation = _grammar.parseString(s_with_blank)
-				stack = []
-				stack.extend(equation.left[0].asList())
-				stack.extend(["=>"])
-				stack.extend(equation.right[0].asList())
-				self.data.update({self.count:stack})
-				self.count += 1;
+				match = filter(lambda x : x.isupper() and x.isalpha(), str(equation))
+				self.fact += str(match)
+				stack = {"left":equation.left[0].asList(),"right":equation.right[0].asList()}
+				self.update(stack)
 		except ParseException:
 			print "Parsing Error"
 			sys.exit()
 
-	def set_initial(self, line):
+	def set_initial_facts(self, line):
 		for c in line:
 			if (c.isupper() and c.isalpha()):
-				self.temp[c] = 1
+				self.initial_fact += c
 
-	def set_goal(self, line):
+	def set_goals(self, line):
 		for c in line:
 			if (c.isupper() and c.isalpha()):
-				self.goal[c] = 1
+				self.goals += c
+
+	def search_goal(self, c):
+		for key, val in self.data.items():
+			if list(flatten(val["left"])).__contains__(c):
+				print c
+
+	def resolver(self):
+		for c in self.goal:
+			self.search_goal(c)
 
 
 parser = argparse.ArgumentParser(description='Expert System: Solver')
@@ -89,22 +129,26 @@ def main(filename):
 			continue
 		else:
 			if (equal_pos == 0):
-				rules.set_initial(line[1:])
+				rules.set_initial_facts(line[1:])
 			if (mark_pos == 0):
-				rules.set_goal(line[1:])
+				rules.set_goals(line[1:])
 			if (equal_pos < 0 and mark_pos < 0) or \
 			(equal_pos > 0 and mark_pos < 0) :
 				if (sharp_pos > 0):
 					rules.parse(line.split("#")[0])
 				elif (sharp_pos < 0):
 					rules.parse(line)
-	if (len(rules.goal) == 0):
+	if (len(rules.goals) == 0):
 		print "No Goal"
 		sys.exit()
 	if (len(rules.data) == 0):
 		print "No Rule"
 		sys.exit()
-	print rules.data
+	rules.fact = ''.join(set(rules.fact))
+	rules.initial_fact = ''.join(set(rules.initial_fact))
+	rules.goals = ''.join(set(rules.goals))
+
+	
 
 if __name__ == "__main__":
 	args = parser.parse_args()
