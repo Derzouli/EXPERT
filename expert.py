@@ -3,6 +3,7 @@
 from pyparsing import Group, Literal, Optional, Regex, Word, ZeroOrMore, Upcase, alphas, Forward
 from collections import Counter
 from pyparsing import ParseException
+import collections
 import argparse
 import sys
 import re
@@ -62,15 +63,12 @@ class Rules(object):
 
 	def __init__(self):
 		self.count = 0
-		self.data = {}
+		self.data = []
+		self.graph = {}
 		self.character = [chr(ord('A')+x) for x in range(26)]
 		self.initial_fact = ""
 		self.goals = ""
 		self.fact = ""
-
-	def update(self, stack):
-		self.data.update({self.count:stack})
-		self.count += 1
 
 	def parse(self, s):
 		try:
@@ -80,16 +78,13 @@ class Rules(object):
 				equation = _grammar.parseString(str_temp)
 				match = filter(lambda x : x.isupper() and x.isalpha(), str(equation))
 				self.fact += str(match)
-				stack = {"left":equation.left[0].asList(),"right":equation.right[0].asList()}
-				self.update(stack)
-				stack = {"left":equation.right[0].asList(),"right":equation.left[0].asList()}
-				self.update(stack)
+				self.data.append((equation.left[0].asList(), equation.right[0].asList()))
+				self.data.append((equation.right[0].asList(), equation.left[0].asList()))
 			else:
 				equation = _grammar.parseString(s_with_blank)
 				match = filter(lambda x : x.isupper() and x.isalpha(), str(equation))
 				self.fact += str(match)
-				stack = {"left":equation.left[0].asList(),"right":equation.right[0].asList()}
-				self.update(stack)
+				self.data.append((equation.left[0].asList(), equation.right[0].asList()))
 		except ParseException:
 			print "Parsing Error"
 			sys.exit()
@@ -106,7 +101,7 @@ class Rules(object):
 
 	def search_goal(self, c):
 		for key, val in self.data.items():
-			if list(flatten(val["left"])).__contains__(c):
+			if list(flatten(val["right"])).__contains__(c):
 				print c
 
 	def resolver(self):
@@ -117,8 +112,8 @@ class Rules(object):
 parser = argparse.ArgumentParser(description='Expert System: Solver')
 parser.add_argument('files', nargs='*')
 
-def main(filename):
-	rules = Rules()
+def parsing(filename):
+	rules = Rules();
 	file = open(filename, "r")
 	for line in file.readlines():
 		sharp_pos = line.find("#")
@@ -144,11 +139,26 @@ def main(filename):
 	if (len(rules.data) == 0):
 		print "No Rule"
 		sys.exit()
+	return rules
+
+def look_up(data, goal, visited=None)
+	for 
+
+
+
+
+def build_graph(rules):
+	for goal in rules.goals:
+		look_up(rules.data, goal)
+	# build_dps(rules.graph, rules.data)
+
+
+def main(filename):
+	rules = parsing(filename)
 	rules.fact = ''.join(set(rules.fact))
 	rules.initial_fact = ''.join(set(rules.initial_fact))
 	rules.goals = ''.join(set(rules.goals))
-
-	
+	build_graph(rules)
 
 if __name__ == "__main__":
 	args = parser.parse_args()
