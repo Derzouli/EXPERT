@@ -86,7 +86,7 @@ def backtrack(graph, character):
 	if (graph.backtrack(Term(character)) == 2):
 		graph.settrack(Term(character))
 
-def pathfinding(graph, term):
+def pathfinding(graph, term, initial_fact):
 	path = graph.find_path(term)
 	for key, value in enumerate(path):
 		if not term.value and len(term) == 1 and \
@@ -95,6 +95,12 @@ def pathfinding(graph, term):
 		if len(term) > 1 and value.value:
 			for c in term.addition_splitter():
 				graph.update(c)
+		if len(value) > 1 and not value.value:
+			result = True
+			for c in value.addition_splitter():
+				result = result & sub_resolve(graph, c, initial_fact)
+			if result:
+				graph.update_value(term)
 
 def sub_resolve(graph, character, initial_fact):
 	path = graph.find_path(Term(character))
@@ -106,17 +112,11 @@ def sub_resolve(graph, character, initial_fact):
 			return False
 	return True
 
-def resolve(graph, character, initial_fact):
+def resolve(graph, character):
 	path = graph.find_path(Term(character))
-	result = True
-	if len(path) == 0:
-		if (character not in initial_fact):
-			result = False
 	for key, value in enumerate(path):
-		if len(value) > 1 and not value.value:
-			for c in value.addition_splitter():
-				result = result & sub_resolve(graph, c, initial_fact)
-	return result
+		if value.value:
+			graph.update_value(Term(character))
 
 def transform(rules):
 	trans_list = [map_tuple_gen(build_term, item, rules.initial_fact) for item in rules.data]
@@ -129,27 +129,15 @@ def transform(rules):
 		except ValueError:
 			pass
 	graph = build_graph(lst_left, lst_right)
-	# print rules.fact
 	for character in rules.fact:
 		backtrack(graph, character)
 	for k, v in enumerate(lst_right):
-		pathfinding(graph, v)
-	# print resolve(graph, "F", rules.initial_fact)
-	print graph.show()
+		pathfinding(graph, v, rules.initial_fact)
+	for k, v in enumerate(rules.goals):
+		resolve(graph,v)
 	for character in rules.goals:
-		result = graph.lookup(Term(character))
-		if not result:
-			print character + " is %r " % resolve(graph, character, rules.initial_fact)
+		if character in rules.initial_fact:
+			print character + " is " + "True"
 		else:
-			print character + " is " + " True "
-	# path = graph.find_path(Term('M'))
-	# print graph.show()
-	# print graph.show()
-	# for character in rules.
-	# path = graph.find_path(Term('K'))
-	# solution = True
-	# for key, value in enumerate(path):
-		# if (value.value is False):
-		# 	solution = False
-		# print value, value.value
-	# print Term('C', value=True).value
+			result = graph.lookup(Term(character))
+			print character + " is %r " % result
