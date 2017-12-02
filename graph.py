@@ -55,6 +55,11 @@ class Graph:
 			if (character in str(key)):
 				self.graph[key.setValue(True)]
 
+	def update_index(self, term):
+		for key, value in self.graph.iteritems():
+			if key.name == term.name:
+				self.graph[key.setValue(True)] 
+
 	def update_value(self, term):
 		for key, value in self.graph.iteritems():
 			for index, val in enumerate(value):

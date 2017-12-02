@@ -8,6 +8,11 @@ class Term(object):
 	def __init__(self, name, value=False):
 		self.name = name
 		self.value = value
+		self.or_value = False
+
+	def setOrValue(self):
+		self.or_value = True  # If its for OR operator
+		return self
 
 	def getName(self):
 		return self.name
@@ -52,28 +57,48 @@ def build_term(data, initial_fact):
 	d = collections.deque(data)
 	t = 0
 	stack_operator = []
+	invert_operator = []
 	while d:
 		s = d.popleft()
-		if (s == '+' or s == '^'):
+		if (s == '!'):
+			invert_operator.append(s)
+		elif (s == '+' or s == '^'):
 			stack_operator.append(s)
 		else:
 			if (stack_operator):
-				op = stack_operator.pop(0)
+				op = stack_operator.pop(0)			
 				if (op == '+'):
-					if s in initial_fact:
-						t = t + Term(s, value=True)
+					if (invert_operator):
+						invert_operator.pop(0)
+						if s in initial_fact:
+							t = t + ~Term(s, value=True)
+						else:
+							t = t + ~Term(s)
 					else:
-						t = t + Term(s)
+						if s in initial_fact:
+							t = t + Term(s, value=True)
+						else:
+							t = t + Term(s)
 				elif (op == '^'):
-					if s in initial_fact:
-						t = t + Term(s, value=True)
+					if (invert_operator):
+						invert_operator.pop(0)
+						if s in initial_fact:
+							t = t ^ ~Term(s, value=True)
+						else:
+							t = t ^ ~Term(s)
 					else:
-						t = t + Term(s)
+						if s in initial_fact:
+							t = t ^ Term(s, value=True)
+						else:
+							t = t ^ Term(s)
 			else:
 				if s in initial_fact:
 					t = Term(s, value=True)
 				else:
 					t = Term(s)
+				if (invert_operator):
+					invert_operator.pop(0)
+					t = ~t
 	return (t)
 
 def build_graph(lst_left, lst_right):
@@ -118,7 +143,56 @@ def resolve(graph, character):
 		if value.value:
 			graph.update_value(Term(character))
 
+def group(seq, sep):
+	g = []
+	for el in seq:
+		if el == sep:
+			yield g
+			g = []
+		else:
+			g.append(el)
+	yield g
+
+def filter_or_operator(data):
+	combs = []
+	for k, v in data:
+		if '|' in k:
+			result = list(group(k, '|'))
+			for key, value in enumerate(result):
+				combs.append((value, v))
+		else:
+			combs.append((k, v))
+	return combs
+
+def checker(c, graph):
+	for key, value in graph.graph.iteritems():
+		for k, v in enumerate(value):
+			if v.value and c == v.name:
+				return True
+	return False
+
+def reconstruct(graph):
+	for key, value in graph.graph.iteritems():
+		if len(key) > 1 and not key.value:
+			stack_operator = []
+			t = 0
+			for c in key.name:
+				if c == '+' or c == '^':
+					stack_operator.append(c)
+				else:
+					if (stack_operator):
+						op = stack_operator.pop(0)
+						if (op == '+'):
+							t = t + Term(c, value=checker(c, graph))
+						elif (op == '^'):
+							t = t ^ Term(c, value=checker(c, graph))
+					else:
+						t = Term(c, value=checker(c, graph))
+			if t.value:
+				graph.update_index(t)
+
 def transform(rules):
+	rules.data = filter_or_operator(rules.data)
 	trans_list = [map_tuple_gen(build_term, item, rules.initial_fact) for item in rules.data]
 	tuple_left, tuple_right = zip(*trans_list)
 	lst_left, lst_right = list(tuple_left), list(tuple_right)
@@ -133,8 +207,10 @@ def transform(rules):
 		backtrack(graph, character)
 	for k, v in enumerate(lst_right):
 		pathfinding(graph, v, rules.initial_fact)
+	reconstruct(graph)
 	for k, v in enumerate(rules.goals):
 		resolve(graph,v)
+	print graph.show()
 	for character in rules.goals:
 		if character in rules.initial_fact:
 			print character + " is " + "True"

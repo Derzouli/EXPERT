@@ -4,7 +4,11 @@ import sys
 
 def parsing(filename):
 	rules = Rules()
-	file = open(filename, "r")
+	try:
+		file = open(filename, "r")
+	except IOError:
+		print "Error: Files does not exist"
+		sys.exit(1)
 	for line in file.readlines():
 		sharp_pos = line.find("#")
 		equal_pos = line.find("=")
