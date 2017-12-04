@@ -1,0 +1,9 @@
+Y => A
+Y | A => B
+B ^ C => Z
+Y + D => F
+!E  | Z => A
+
+?ADE
+
+=CBFZ

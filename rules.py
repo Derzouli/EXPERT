@@ -2,6 +2,7 @@
 from pyparsing import ParseException
 from pyparsing import Group, Literal, Optional, Regex, Word, ZeroOrMore, Upcase, alphas, Forward
 from pyparsing import ParseException
+import sys
 
 def grammar():
 	_and = Literal('+').setParseAction(lambda:'+')

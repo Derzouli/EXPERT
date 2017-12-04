@@ -2,6 +2,8 @@
 import collections
 from graph import Graph
 import functools
+import sys
+from sets import Set
 
 class Term(object):
 
@@ -52,6 +54,9 @@ class Term(object):
 def map_tuple_gen(func, tup, initial_fact):
 	return tuple(func(itup, initial_fact) for itup in tup)
 
+def error_parenthese():
+	print "PARENTHESES ARE NOT WORKING"
+	sys.exit(1)
 # decompose chaque term avec la data passee en parametre
 def build_term(data, initial_fact):
 	d = collections.deque(data)
@@ -70,11 +75,15 @@ def build_term(data, initial_fact):
 				if (op == '+'):
 					if (invert_operator):
 						invert_operator.pop(0)
+						if type(s) is list:
+							error_parenthese()
 						if s in initial_fact:
 							t = t + ~Term(s, value=True)
 						else:
 							t = t + ~Term(s)
 					else:
+						if type(s) is list:
+							error_parenthese()
 						if s in initial_fact:
 							t = t + Term(s, value=True)
 						else:
@@ -82,16 +91,22 @@ def build_term(data, initial_fact):
 				elif (op == '^'):
 					if (invert_operator):
 						invert_operator.pop(0)
+						if type(s) is list:
+							error_parenthese()
 						if s in initial_fact:
 							t = t ^ ~Term(s, value=True)
 						else:
 							t = t ^ ~Term(s)
 					else:
+						if type(s) is list:
+							error_parenthese()
 						if s in initial_fact:
 							t = t ^ Term(s, value=True)
 						else:
 							t = t ^ Term(s)
 			else:
+				if type(s) is list:
+					error_parenthese()
 				if s in initial_fact:
 					t = Term(s, value=True)
 				else:
@@ -191,11 +206,30 @@ def reconstruct(graph):
 			if t.value:
 				graph.update_index(t)
 
+def naming(a):
+	return a.name
+
+def check_verify(lst_left, lst_right):
+	s = set()
+	left = list(map(naming, lst_left))
+	right = list(map(naming, lst_right))
+	lis = [(x,y) for (x,y) in zip(left, right) if x != y]
+	if len(lis) != len(left):
+		print "INCORRECT RULES CASE: INCORRECT EQUALITY OF FACT"
+		sys.exit(1)
+	seen = dict()
+	for i in lis:
+		if tuple((i[1], i[0])) in s:
+			print "INCORRECT RULES CASE"
+			sys.exit(1)
+		s.add((i[0], i[1]))
+
 def transform(rules):
 	rules.data = filter_or_operator(rules.data)
 	trans_list = [map_tuple_gen(build_term, item, rules.initial_fact) for item in rules.data]
 	tuple_left, tuple_right = zip(*trans_list)
 	lst_left, lst_right = list(tuple_left), list(tuple_right)
+	check_verify(lst_left, lst_right)
 	for key, val in enumerate(lst_left):
 		try:
 			lst_left.append(lst_left[lst_right.index(val)])
