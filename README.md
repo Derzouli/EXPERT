@@ -10,7 +10,6 @@ The program must, given the facts and rules given, tell if the query is true, fa
 By default, all facts are false, and can only be made true by the initial facts statement, or by application of a rule. \
 A fact can only be undetermined if the ruleset is ambiguous, for example if I say "A is true, also if A then B or C", then B and C are undetermined. \
 If there is an error in the input, for example a contradiction in the facts, or a syntax error, the program inform the user of the problem. \
-
 Here’s a list of the features the engine support. \
 • "AND" conditions. For example, "If A and B and [...] then X" \
 • "OR" conditions. For example, "If C or D then Z" \
@@ -19,6 +18,5 @@ means "exclusive OR". It is only true if one and only one of the operands is tru
 • Negation. For example, "If A and not B then Y" \
 • Multiple rules can have the same fact as a conclusion \
 • "AND" in conclusions. For example, "If A then B and C" \
-
 This repository is only for educational purpose. \
-Commits are not correctly named. \
+Commits are not correctly named.
