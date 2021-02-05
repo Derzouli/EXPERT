@@ -1,4 +1,5 @@
 Expert System
+for more information: https://en.wikipedia.org/wiki/Expert_system
 Implementation of  backward-chaining inference engine.
 Rules and facts will be given as a text file named test_XX, 
 A fact can be any uppercase alphabetical character.
@@ -19,4 +20,5 @@ means "exclusive OR". It is only true if one and only one of the operands is tru
 • Multiple rules can have the same fact as a conclusion
 • "AND" in conclusions. For example, "If A then B and C"
 
-This repository is only for educational purpose
+This repository is only for educational purpose.
+Commits are not correctly named.
